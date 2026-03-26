@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kuida MVP1 — Informe de Auditoría</title>
+    <meta name="description" content="Informe completo de auditoría técnica y funcional del MVP1 de Kuida, plataforma QMS para gestión de normas ISO.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* ===== DESIGN TOKENS ===== */
+        :root {
+            --bg-primary: #0a0b0f;
+            --bg-secondary: #12131a;
+            --bg-card: rgba(22, 24, 35, 0.7);
+            --bg-glass: rgba(255, 255, 255, 0.03);
+            --border-glass: rgba(255, 255, 255, 0.06);
+            --border-accent: rgba(255, 255, 255, 0.1);
+            --text-primary: #f0f0f5;
+            --text-secondary: #8b8da3;
+            --text-muted: #5a5c72;
+            --accent-primary: #6c5ce7;
+            --accent-secondary: #a29bfe;
+            --accent-glow: rgba(108, 92, 231, 0.25);
+            --success: #00cec9;
+            --success-bg: rgba(0, 206, 201, 0.1);
+            --success-border: rgba(0, 206, 201, 0.2);
+            --critical: #ff6b6b;
+            --critical-bg: rgba(255, 107, 107, 0.1);
+            --critical-border: rgba(255, 107, 107, 0.2);
+            --warning: #feca57;
+            --warning-bg: rgba(254, 202, 87, 0.1);
+            --warning-border: rgba(254, 202, 87, 0.2);
+            --info: #54a0ff;
+            --info-bg: rgba(84, 160, 255, 0.1);
+            --info-border: rgba(84, 160, 255, 0.2);
+            --radius-sm: 8px;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+            --radius-xl: 28px;
+            --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* ===== RESET & BASE ===== */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.7;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ===== AMBIENT BACKGROUND ===== */
+        .ambient-bg {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            overflow: hidden;
+        }
+        .ambient-bg .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.15;
+            animation: float 20s ease-in-out infinite;
+        }
+        .ambient-bg .orb-1 {
+            width: 600px; height: 600px;
+            background: var(--accent-primary);
+            top: -200px; left: -200px;
+            animation-delay: 0s;
+        }
+        .ambient-bg .orb-2 {
+            width: 500px; height: 500px;
+            background: #e056a0;
+            bottom: -150px; right: -100px;
+            animation-delay: -7s;
+        }
+        .ambient-bg .orb-3 {
+            width: 400px; height: 400px;
+            background: var(--success);
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            animation-delay: -14s;
+            opacity: 0.08;
+        }
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -40px) scale(1.05); }
+            66% { transform: translate(-20px, 20px) scale(0.95); }
+        }
+
+        /* ===== NAVIGATION ===== */
+        .top-nav {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 1000;
+            padding: 0 32px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(10, 11, 15, 0.8);
+            backdrop-filter: blur(20px) saturate(1.2);
+            border-bottom: 1px solid var(--border-glass);
+            transition: var(--transition);
+        }
+        .top-nav.scrolled {
+            background: rgba(10, 11, 15, 0.95);
+            box-shadow: 0 4px 30px rgba(0,0,0,0.3);
+        }
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            letter-spacing: -0.02em;
+        }
+        .nav-brand .logo-dot {
+            width: 10px; height: 10px;
+            background: var(--accent-primary);
+            border-radius: 50%;
+            box-shadow: 0 0 12px var(--accent-glow);
+        }
+        .nav-links {
+            display: flex;
+            gap: 4px;
+            list-style: none;
+        }
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.82rem;
+            font-weight: 500;
+            padding: 8px 14px;
+            border-radius: var(--radius-sm);
+            transition: var(--transition);
+        }
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: var(--text-primary);
+            background: var(--bg-glass);
+        }
+
+        /* ===== HERO ===== */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 100px 24px 80px;
+            position: relative;
+        }
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            border-radius: 100px;
+            border: 1px solid var(--border-accent);
+            background: var(--bg-glass);
+            font-size: 0.78rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+            animation: fadeInDown 0.8s ease;
+        }
+        .hero-badge .pulse {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--critical);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+        }
+        .hero h1 {
+            font-size: clamp(2.5rem, 6vw, 4.5rem);
+            font-weight: 900;
+            letter-spacing: -0.04em;
+            line-height: 1.1;
+            margin-bottom: 20px;
+            animation: fadeInUp 0.8s ease 0.2s both;
+        }
+        .hero h1 .gradient-text {
+            background: linear-gradient(135deg, var(--accent-secondary), #e056a0, var(--success));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hero-subtitle {
+            font-size: 1.15rem;
+            color: var(--text-secondary);
+            max-width: 580px;
+            margin-bottom: 40px;
+            font-weight: 400;
+            animation: fadeInUp 0.8s ease 0.4s both;
+        }
+        .hero-meta {
+            display: flex;
+            gap: 32px;
+            flex-wrap: wrap;
+            justify-content: center;
+            animation: fadeInUp 0.8s ease 0.6s both;
+        }
+        .hero-meta-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        .hero-meta-item .value {
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+        }
+        .hero-meta-item .label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-weight: 600;
+        }
+        .hero-meta-item.critical .value { color: var(--critical); }
+        .hero-meta-item.success .value { color: var(--success); }
+        .hero-meta-item.warning .value { color: var(--warning); }
+        .hero-meta-item.info .value { color: var(--info); }
+
+        .scroll-indicator {
+            position: absolute;
+            bottom: 32px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            animation: bounce 2s ease-in-out infinite;
+        }
+        .scroll-indicator .arrow {
+            width: 24px; height: 24px;
+            border-right: 2px solid var(--text-muted);
+            border-bottom: 2px solid var(--text-muted);
+            transform: rotate(45deg);
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(8px); }
+        }
+
+        /* ===== ANIMATIONS ===== */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .reveal {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: opacity 0.7s ease, transform 0.7s ease;
+        }
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ===== MAIN CONTENT ===== */
+        .content-wrapper {
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* ===== SECTION ===== */
+        .section {
+            padding: 100px 0;
+        }
+        .section-header {
+            margin-bottom: 56px;
+        }
+        .section-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--accent-secondary);
+            margin-bottom: 16px;
+        }
+        .section-label::before {
+            content: '';
+            display: block;
+            width: 24px;
+            height: 2px;
+            background: var(--accent-primary);
+            border-radius: 1px;
+        }
+        .section-title {
+            font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            line-height: 1.2;
+            margin-bottom: 16px;
+        }
+        .section-description {
+            font-size: 1.05rem;
+            color: var(--text-secondary);
+            max-width: 640px;
+        }
+
+        /* ===== CARDS ===== */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            backdrop-filter: blur(10px);
+            transition: var(--transition);
+        }
+        .card:hover {
+            border-color: var(--border-accent);
+            transform: translateY(-2px);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+
+        /* ===== FINDINGS GRID ===== */
+        .findings-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+        .finding-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            transition: var(--transition);
+        }
+        .finding-card:hover {
+            border-color: var(--border-accent);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+        .finding-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            padding: 28px 32px;
+        }
+        .finding-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+        .finding-icon.success { background: var(--success-bg); border: 1px solid var(--success-border); }
+        .finding-icon.critical { background: var(--critical-bg); border: 1px solid var(--critical-border); }
+        .finding-icon.warning { background: var(--warning-bg); border: 1px solid var(--warning-border); }
+        .finding-icon.info { background: var(--info-bg); border: 1px solid var(--info-border); }
+
+        .finding-content { flex: 1; }
+        .finding-content h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+            letter-spacing: -0.01em;
+        }
+        .finding-content p {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .severity-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 100px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+        .severity-badge.critical {
+            background: var(--critical-bg);
+            color: var(--critical);
+            border: 1px solid var(--critical-border);
+        }
+        .severity-badge.success {
+            background: var(--success-bg);
+            color: var(--success);
+            border: 1px solid var(--success-border);
+        }
+        .severity-badge.warning {
+            background: var(--warning-bg);
+            color: var(--warning);
+            border: 1px solid var(--warning-border);
+        }
+        .severity-badge.info {
+            background: var(--info-bg);
+            color: var(--info);
+            border: 1px solid var(--info-border);
+        }
+
+        .finding-details {
+            padding: 0 32px 28px;
+        }
+        .finding-details ul {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .finding-details li {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+        .finding-details li::before {
+            content: '→';
+            color: var(--text-muted);
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+        .finding-details .impact-label {
+            display: inline-block;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            font-weight: 500;
+            color: var(--warning);
+            background: var(--warning-bg);
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-top: 6px;
+        }
+
+        /* ===== IMAGE SLIDER ===== */
+        .slider-container {
+            position: relative;
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-glass);
+        }
+        .slider-track {
+            display: flex;
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .slider-slide {
+            min-width: 100%;
+            position: relative;
+        }
+        .slider-slide img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .slider-caption {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 40px 24px 20px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.85));
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: rgba(255,255,255,0.9);
+        }
+        .slider-controls {
+            position: absolute;
+            bottom: 16px;
+            right: 16px;
+            display: flex;
+            gap: 8px;
+            z-index: 10;
+        }
+        .slider-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(10px);
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+        .slider-btn:hover {
+            background: rgba(255,255,255,0.15);
+            border-color: rgba(255,255,255,0.4);
+        }
+        .slider-dots {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 6px;
+            z-index: 10;
+        }
+        .slider-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .slider-dot.active {
+            background: white;
+            width: 24px;
+            border-radius: 4px;
+        }
+
+        /* ===== PHASE TIMELINE ===== */
+        .phase-timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 64px;
+        }
+        .phase-item {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 48px;
+            align-items: center;
+        }
+        .phase-item:nth-child(even) {
+            direction: rtl;
+        }
+        .phase-item:nth-child(even) > * {
+            direction: ltr;
+        }
+        .phase-info {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .phase-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: white;
+        }
+        .phase-info h3 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+        .phase-info p {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        /* ===== CONCLUSION ===== */
+        .conclusion-card {
+            background: linear-gradient(135deg, rgba(108, 92, 231, 0.08), rgba(0, 206, 201, 0.05));
+            border: 1px solid rgba(108, 92, 231, 0.15);
+            border-radius: var(--radius-xl);
+            padding: 56px 48px;
+            text-align: center;
+        }
+        .conclusion-card h2 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            margin-bottom: 20px;
+        }
+        .conclusion-card p {
+            font-size: 1.05rem;
+            color: var(--text-secondary);
+            max-width: 640px;
+            margin: 0 auto 40px;
+            line-height: 1.7;
+        }
+        .next-steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            text-align: left;
+        }
+        .step-item {
+            background: var(--bg-glass);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            transition: var(--transition);
+        }
+        .step-item:hover {
+            border-color: var(--accent-primary);
+            background: rgba(108, 92, 231, 0.05);
+        }
+        .step-item .step-num {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: var(--accent-secondary);
+            margin-bottom: 8px;
+        }
+        .step-item h4 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            line-height: 1.4;
+        }
+        .step-item p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        /* ===== FOOTER ===== */
+        footer {
+            padding: 40px 24px;
+            text-align: center;
+            border-top: 1px solid var(--border-glass);
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .phase-item {
+                grid-template-columns: 1fr;
+                gap: 24px;
+            }
+            .phase-item:nth-child(even) {
+                direction: ltr;
+            }
+            .nav-links { display: none; }
+            .hero-meta { gap: 20px; }
+            .conclusion-card { padding: 36px 24px; }
+            .finding-header { flex-direction: column; }
+        }
+
+        /* ===== PROGRESS BAR ===== */
+        .reading-progress {
+            position: fixed;
+            top: 64px;
+            left: 0;
+            width: 0%;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary), #e056a0);
+            z-index: 999;
+            transition: width 0.1s linear;
+        }
+
+        /* ===== SEPARATOR ===== */
+        .separator {
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-primary), transparent);
+            border-radius: 2px;
+            margin: 80px auto;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Ambient Background -->
+    <div class="ambient-bg">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <!-- Reading Progress -->
+    <div class="reading-progress" id="readingProgress"></div>
+
+    <!-- Navigation -->
+    <nav class="top-nav" id="topNav">
+        <div class="nav-brand">
+            <span class="logo-dot"></span>
+            Kuida Audit
+        </div>
+        <ul class="nav-links">
+            <li><a href="#walkthrough">Walkthrough</a></li>
+            <li><a href="#automation">Automatización</a></li>
+            <li><a href="#bugs">Bugs</a></li>
+            <li><a href="#ux">UX/UI</a></li>
+            <li><a href="#conclusion">Conclusión</a></li>
+        </ul>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero" id="hero">
+        <div class="hero-badge">
+            <span class="pulse"></span>
+            Auditoría Técnica Completa
+        </div>
+        <h1>Kuida <span class="gradient-text">MVP1</span></h1>
+        <p class="hero-subtitle">Informe consolidado de hallazgos funcionales, bugs críticos y observaciones de UX/UI sobre la plataforma QMS para gestión de normas ISO.</p>
+        <div class="hero-meta">
+            <div class="hero-meta-item critical">
+                <span class="value">3</span>
+                <span class="label">Críticos</span>
+            </div>
+            <div class="hero-meta-item success">
+                <span class="value">3</span>
+                <span class="label">Éxitos</span>
+            </div>
+            <div class="hero-meta-item warning">
+                <span class="value">2</span>
+                <span class="label">Bugs</span>
+            </div>
+            <div class="hero-meta-item info">
+                <span class="value">4</span>
+                <span class="label">UX/UI</span>
+            </div>
+        </div>
+        <div class="scroll-indicator">
+            <span>Explorar</span>
+            <div class="arrow"></div>
+        </div>
+    </section>
+
+    <div class="content-wrapper">
+
+        <!-- ===== WALKTHROUGH PHASES ===== -->
+        <section class="section" id="walkthrough">
+            <div class="section-header reveal">
+                <div class="section-label">Walkthrough</div>
+                <h2 class="section-title">Fases de Exploración</h2>
+                <p class="section-description">Recorrido visual por las cuatro fases de la auditoría, desde el login hasta el análisis profundo de tareas.</p>
+            </div>
+
+            <div class="phase-timeline">
+
+                <!-- Phase 1 -->
+                <div class="phase-item reveal">
+                    <div class="phase-info">
+                        <span class="phase-number">1</span>
+                        <h3>Exploración Inicial y Branding</h3>
+                        <p>Se identificó una interfaz moderna con inconsistencias de idioma (mezcla de inglés y español) y un footer que aún referencia a "Ecme" en lugar de "Kuida".</p>
+                    </div>
+                    <div class="slider-container" data-slider="phase1">
+                        <div class="slider-track">
+                            <div class="slider-slide">
+                                <img src="assets/dashboard_1774407595322.png" alt="Dashboard principal de Kuida">
+                                <div class="slider-caption">Dashboard con métricas estáticas</div>
+                            </div>
+                            <div class="slider-slide">
+                                <img src="assets/form_builder_list_1774407657665.png" alt="Form Builder">
+                                <div class="slider-caption">Inconsistencia de idioma en Form Builder</div>
+                            </div>
+                            <div class="slider-slide">
+                                <img src="assets/diagnostic_list_1774407685843.png" alt="Diagnósticos">
+                                <div class="slider-caption">Lista de diagnósticos disponibles</div>
+                            </div>
+                            <div class="slider-slide">
+                                <img src="assets/employees_list_1774407719379.png" alt="Empleados">
+                                <div class="slider-caption">Sección de gestión de empleados</div>
+                            </div>
+                            <div class="slider-slide">
+                                <img src="assets/account_page_1774407788132.png" alt="Cuenta">
+                                <div class="slider-caption">Página de cuenta del usuario</div>
+                            </div>
+                        </div>
+                        <div class="slider-dots"></div>
+                        <div class="slider-controls">
+                            <button class="slider-btn" data-dir="prev">‹</button>
+                            <button class="slider-btn" data-dir="next">›</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Phase 2 -->
+                <div class="phase-item reveal">
+                    <div class="phase-info">
+                        <span class="phase-number">2</span>
+                        <h3>Inyección de Datos y Automatización</h3>
+                        <p>Probamos la creación de empleados y la potencia de la automatización: completar un diagnóstico genera automáticamente un proyecto de remediación con tareas vinculadas.</p>
+                    </div>
+                    <div class="slider-container" data-slider="phase2">
+                        <div class="slider-track">
+                            <div class="slider-slide">
+                                <img src="assets/click_feedback_1774408536262.png" alt="Creación de empleado">
+                                <div class="slider-caption">Creación de empleado — Maria Garcia</div>
+                            </div>
+                            <div class="slider-slide">
+                                <img src="assets/click_feedback_1774409673592.png" alt="Proyecto auto-generado">
+                                <div class="slider-caption">Proyecto auto-generado tras Diagnóstico</div>
+                            </div>
+                            <div class="slider-slide">
+                                <img src="assets/projects_list_1774407620141.png" alt="Lista de proyectos">
+                                <div class="slider-caption">Vista de proyectos creados</div>
+                            </div>
+                        </div>
+                        <div class="slider-dots"></div>
+                        <div class="slider-controls">
+                            <button class="slider-btn" data-dir="prev">‹</button>
+                            <button class="slider-btn" data-dir="next">›</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Phase 3 -->
+                <div class="phase-item reveal">
+                    <div class="phase-info">
+                        <span class="phase-number">3</span>
+                        <h3>Hallazgos Críticos y Bugs</h3>
+                        <p>Identificamos un fallo de inicialización en proyectos manuales (sin secciones) y una inconsistencia lógica en el dashboard (tareas que aparecen sin existir).</p>
+                    </div>
+                    <div class="slider-container" data-slider="phase3">
+                        <div class="slider-track">
+                            <div class="slider-slide">
+                                <img src="assets/click_feedback_1774410422648.png" alt="Bug: proyecto sin secciones">
+                                <div class="slider-caption">Bug: Proyecto sin secciones ni requisitos</div>
+                            </div>
+                            <div class="slider-slide">
+                                <img src="assets/click_feedback_1774410439180.png" alt="Bug: tareas fantasma">
+                                <div class="slider-caption">Bug Lógico: Tareas en "Upcoming Deadlines" inexistentes</div>
+                            </div>
+                            <div class="slider-slide">
+                                <img src="assets/externals_list_1774407752789.png" alt="Externals placeholder">
+                                <div class="slider-caption">Externals — Sección placeholder estática</div>
+                            </div>
+                        </div>
+                        <div class="slider-dots"></div>
+                        <div class="slider-controls">
+                            <button class="slider-btn" data-dir="prev">‹</button>
+                            <button class="slider-btn" data-dir="next">›</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Phase 4 -->
+                <div class="phase-item reveal">
+                    <div class="phase-info">
+                        <span class="phase-number">4</span>
+                        <h3>Operatividad de Tareas</h3>
+                        <p>Análisis profundo de la estructura de tareas dentro de los requisitos: Tableros Kanban funcionales pero con limitaciones en la asignación de personal.</p>
+                    </div>
+                    <div class="slider-container" data-slider="phase4">
+                        <div class="slider-track">
+                            <div class="slider-slide">
+                                <img src="assets/requirements_list_section_4_1774411165180.png" alt="Requisitos sección 4">
+                                <div class="slider-caption">Lista de requisitos — Sección 4</div>
+                            </div>
+                            <div class="slider-slide">
+                                <img src="assets/requirement_4_1_internal_view_1774411174888.png" alt="Kanban">
+                                <div class="slider-caption">Tablero Kanban dentro del Requisito 4.1</div>
+                            </div>
+                            <div class="slider-slide">
+                                <img src="assets/task_internal_view_modal_1774411186008.png" alt="Detalle de tarea">
+                                <div class="slider-caption">Detalle de tarea y sección de comentarios</div>
+                            </div>
+                            <div class="slider-slide">
+                                <img src="assets/task_assignment_no_options_1774411333773.png" alt="Error de asignación">
+                                <div class="slider-caption">Error: No hay opciones de asignación</div>
+                            </div>
+                        </div>
+                        <div class="slider-dots"></div>
+                        <div class="slider-controls">
+                            <button class="slider-btn" data-dir="prev">‹</button>
+                            <button class="slider-btn" data-dir="next">›</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="separator"></div>
+
+        <!-- ===== HALLAZGOS: AUTOMATIZACIÓN ===== -->
+        <section class="section" id="automation">
+            <div class="section-header reveal">
+                <div class="section-label">Hallazgos</div>
+                <h2 class="section-title">Automatización (Core Flow)</h2>
+                <p class="section-description">Evaluación del ciclo principal: Diagnóstico → Proyecto → Tareas y la gestión interna de requisitos.</p>
+            </div>
+
+            <div class="findings-grid">
+
+                <div class="finding-card reveal">
+                    <div class="finding-header">
+                        <div class="finding-icon success">✓</div>
+                        <div class="finding-content">
+                            <h3>Ciclo: Diagnóstico → Proyecto → Tareas</h3>
+                            <p>El flujo principal de automatización funciona correctamente.</p>
+                        </div>
+                        <span class="severity-badge success">✓ Éxito</span>
+                    </div>
+                    <div class="finding-details">
+                        <ul>
+                            <li>Al finalizar el <strong>ISO 9001 Diagnostic</strong> con incumplimientos, el sistema creó inmediatamente el proyecto: <em>ISO 9001 Diagnostic — Mar 24, 2026</em>.</li>
+                            <li>Todos los requisitos marcados como "no cumplidos" fueron transformados en <strong>Requirements</strong> dentro del nuevo proyecto.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="finding-card reveal">
+                    <div class="finding-header">
+                        <div class="finding-icon success">✓</div>
+                        <div class="finding-content">
+                            <h3>Gestión Interna de Requisitos: Kanban</h3>
+                            <p>Tableros Kanban operativos con sub-tareas y comentarios funcionales.</p>
+                        </div>
+                        <span class="severity-badge success">✓ Éxito</span>
+                    </div>
+                    <div class="finding-details">
+                        <ul>
+                            <li>Cada requisito (ej: 4.1) posee un tablero interno con columnas de estado: <em>Pending</em>, <em>In Progress</em> e <em>In Review</em>.</li>
+                            <li>Funcionalidad de añadir nuevas tareas dentro de un requisito operativa (título, descripción, prioridad).</li>
+                            <li>Modal de edición completo con sección de comentarios funcional para la colaboración.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="finding-card reveal">
+                    <div class="finding-header">
+                        <div class="finding-icon success">✓</div>
+                        <div class="finding-content">
+                            <h3>Inyección de Datos y Gestión Manual</h3>
+                            <p>Creación de empleados, proyectos y asignación de equipo funcionando.</p>
+                        </div>
+                        <span class="severity-badge success">✓ Éxito</span>
+                    </div>
+                    <div class="finding-details">
+                        <ul>
+                            <li>Perfiles de empleados <strong>Juan Perez</strong> y <strong>Maria Garcia</strong> agregados exitosamente.</li>
+                            <li>Proyecto <strong>"Implementación ISO 27001"</strong> creado manualmente sin errores.</li>
+                            <li>Capacidad de agregar miembros al equipo del proyecto verificada.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="finding-card reveal">
+                    <div class="finding-header">
+                        <div class="finding-icon critical">✕</div>
+                        <div class="finding-content">
+                            <h3>Limitación de Asignación en Tareas</h3>
+                            <p>El desplegable de "Assigned to" muestra "No options" en el tablero Kanban.</p>
+                        </div>
+                        <span class="severity-badge critical">⚠ Crítico</span>
+                    </div>
+                    <div class="finding-details">
+                        <ul>
+                            <li>Incluso con empleados registrados, el campo de asignación no carga opciones desde el tablero Kanban del requisito.</li>
+                            <li><span class="impact-label">Impacto:</span> Bloquea la delegación efectiva de responsabilidades desde el nivel operativo del tablero Kanban.</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <div class="separator"></div>
+
+        <!-- ===== HALLAZGOS: BUGS ===== -->
+        <section class="section" id="bugs">
+            <div class="section-header reveal">
+                <div class="section-label">Bugs Críticos</div>
+                <h2 class="section-title">Hallazgos Funcionales</h2>
+                <p class="section-description">Fallos que afectan directamente la operatividad de la plataforma y la integridad de los datos.</p>
+            </div>
+
+            <div class="findings-grid">
+
+                <div class="finding-card reveal">
+                    <div class="finding-header">
+                        <div class="finding-icon critical">✕</div>
+                        <div class="finding-content">
+                            <h3>Fallo de Inicialización: Proyectos sin Secciones ni Requisitos</h3>
+                            <p>Proyectos creados manualmente quedan huérfanos sin estructura de norma.</p>
+                        </div>
+                        <span class="severity-badge critical">⚠ Crítico</span>
+                    </div>
+                    <div class="finding-details">
+                        <ul>
+                            <li>En el proyecto <code>5d147131...</code> (Implementación ISO 27001), el menú de <strong>"Sections"</strong> en la barra lateral está vacío y no es funcional.</li>
+                            <li>Sin secciones cargadas, el proyecto tiene 0 Requirements, haciendo imposible la asignación de trabajo y seguimiento del cumplimiento.</li>
+                            <li><em>Causa Probable:</em> El proceso de creación manual no vincula la estructura de la norma seleccionada o falta un paso de "Importar Requisitos".</li>
+                            <li><span class="impact-label">Impacto: Bloqueante</span></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="finding-card reveal">
+                    <div class="finding-header">
+                        <div class="finding-icon warning">!</div>
+                        <div class="finding-content">
+                            <h3>Inconsistencia Lógica: Tareas Fantasma en Dashboard</h3>
+                            <p>Métricas y alertas contradictorias en el widget de "Upcoming Deadlines".</p>
+                        </div>
+                        <span class="severity-badge warning">⚡ Bug</span>
+                    </div>
+                    <div class="finding-details">
+                        <ul>
+                            <li>A pesar de que el proyecto tiene <strong>0 requisitos</strong>, el widget de "Upcoming Deadlines" muestra la tarea: <em>"Complete Section 5 Requirements"</em> con prioridad alta.</li>
+                            <li><span class="impact-label">Impacto:</span> Genera desconfianza en la integridad de los datos.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="finding-card reveal">
+                    <div class="finding-header">
+                        <div class="finding-icon critical">✕</div>
+                        <div class="finding-content">
+                            <h3>Funcionalidad Pendiente: Externals y Configuración</h3>
+                            <p>Secciones incompletas con solo texto estático de placeholder.</p>
+                        </div>
+                        <span class="severity-badge critical">⚠ Crítico</span>
+                    </div>
+                    <div class="finding-details">
+                        <ul>
+                            <li><strong>Externals:</strong> La sección es solo un placeholder estático — "ExternalsPage".</li>
+                            <li><strong>Preferences &gt; Requirements:</strong> La pestaña de configuración de requisitos es solo un texto estático (<code>RequirementsTabView</code>) sin controles para el usuario.</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <div class="separator"></div>
+
+        <!-- ===== HALLAZGOS: UX/UI ===== -->
+        <section class="section" id="ux">
+            <div class="section-header reveal">
+                <div class="section-label">UX / UI</div>
+                <h2 class="section-title">Experiencia de Usuario</h2>
+                <p class="section-description">Observaciones sobre idioma, marca, legibilidad e iconografía.</p>
+            </div>
+
+            <div class="findings-grid">
+
+                <div class="finding-card reveal">
+                    <div class="finding-header">
+                        <div class="finding-icon warning">!</div>
+                        <div class="finding-content">
+                            <h3>Inconsistencia de Idioma (i18n)</h3>
+                            <p>La interfaz mezcla inglés y español afectando la percepción profesional.</p>
+                        </div>
+                        <span class="severity-badge warning">⚡ Importante</span>
+                    </div>
+                    <div class="finding-details">
+                        <ul>
+                            <li><strong>Sidebar:</strong> En inglés — Dashboard, Projects, Form Builder, etc.</li>
+                            <li><strong>Contenido:</strong> En español — "Mis Formularios", "Create Profile", "Add Member".</li>
+                            <li><strong>Recomendación:</strong> Unificar toda la plataforma a un solo idioma.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="finding-card reveal">
+                    <div class="finding-header">
+                        <div class="finding-icon info">ℹ</div>
+                        <div class="finding-content">
+                            <h3>Marca e Identidad (Footer)</h3>
+                            <p>El pie de página indica "Copyright © 2026 Ecme".</p>
+                        </div>
+                        <span class="severity-badge info">○ Moderado</span>
+                    </div>
+                    <div class="finding-details">
+                        <ul>
+                            <li>Debe actualizarse para reflejar la marca <strong>Kuida</strong> en lugar de "Ecme".</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="finding-card reveal">
+                    <div class="finding-header">
+                        <div class="finding-icon info">ℹ</div>
+                        <div class="finding-content">
+                            <h3>Legibilidad en Navegación (Stepper)</h3>
+                            <p>Pasos del stepper truncados en la sección de Diagnóstico.</p>
+                        </div>
+                        <span class="severity-badge info">○ Ajuste</span>
+                    </div>
+                    <div class="finding-details">
+                        <ul>
+                            <li>Los pasos del stepper lateral están truncados (ej: "Organizati..."). Se requiere más espacio o tooltips.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="finding-card reveal">
+                    <div class="finding-header">
+                        <div class="finding-icon info">ℹ</div>
+                        <div class="finding-content">
+                            <h3>Iconografía y Alineación</h3>
+                            <p>Detalles menores en botón "Next" y consistencia visual general.</p>
+                        </div>
+                        <span class="severity-badge info">○ Polish</span>
+                    </div>
+                    <div class="finding-details">
+                        <ul>
+                            <li>El icono de flecha en el botón "Next" del diagnóstico parece desproporcional o ligeramente desalineado.</li>
+                            <li>La consistencia visual general es alta, con un diseño limpio y moderno (Glassmorphism sutil).</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <div class="separator"></div>
+
+        <!-- ===== CONCLUSIÓN ===== -->
+        <section class="section" id="conclusion">
+            <div class="conclusion-card reveal">
+                <h2>Conclusión y Próximos Pasos</h2>
+                <p>El MVP1 tiene una base sólida y moderna. Para avanzar hacia la etapa <strong>IA Voice First</strong>, es prioritario resolver los siguientes puntos:</p>
+                <div class="next-steps">
+                    <div class="step-item">
+                        <div class="step-num">01 — PRIORIDAD ALTA</div>
+                        <h4>Resolver fallos de inicialización</h4>
+                        <p>Asegurar que todos los proyectos siempre tengan secciones y requisitos vinculados a la norma seleccionada.</p>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-num">02 — PRIORIDAD ALTA</div>
+                        <h4>Corregir asignación de tareas</h4>
+                        <p>El desplegable "Assigned to" del tablero Kanban debe cargar empleados registrados del proyecto.</p>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-num">03 — PRIORIDAD MEDIA</div>
+                        <h4>Unificar idioma (i18n)</h4>
+                        <p>Implementar un sistema de internacionalización consistente en toda la plataforma.</p>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-num">04 — PRIORIDAD BAJA</div>
+                        <h4>Actualizar branding del footer</h4>
+                        <p>Cambiar "Ecme" por "Kuida" en el copyright del pie de página.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <footer>
+        <p>Kuida MVP1 — Informe de Auditoría · Marzo 2026</p>
+    </footer>
+
+    <script>
+        // ===== SLIDER ENGINE =====
+        class Slider {
+            constructor(container) {
+                this.container = container;
+                this.track = container.querySelector('.slider-track');
+                this.slides = container.querySelectorAll('.slider-slide');
+                this.dotsContainer = container.querySelector('.slider-dots');
+                this.currentIndex = 0;
+                this.total = this.slides.length;
+                this.autoplayInterval = null;
+
+                this.init();
+            }
+
+            init() {
+                // Create dots
+                for (let i = 0; i < this.total; i++) {
+                    const dot = document.createElement('div');
+                    dot.classList.add('slider-dot');
+                    if (i === 0) dot.classList.add('active');
+                    dot.addEventListener('click', () => this.goTo(i));
+                    this.dotsContainer.appendChild(dot);
+                }
+
+                // Button controls
+                const prevBtn = this.container.querySelector('[data-dir="prev"]');
+                const nextBtn = this.container.querySelector('[data-dir="next"]');
+                if (prevBtn) prevBtn.addEventListener('click', () => this.prev());
+                if (nextBtn) nextBtn.addEventListener('click', () => this.next());
+
+                // Touch support
+                let startX = 0;
+                this.track.addEventListener('touchstart', (e) => {
+                    startX = e.touches[0].clientX;
+                    this.stopAutoplay();
+                }, { passive: true });
+                this.track.addEventListener('touchend', (e) => {
+                    const diff = startX - e.changedTouches[0].clientX;
+                    if (Math.abs(diff) > 50) {
+                        diff > 0 ? this.next() : this.prev();
+                    }
+                    this.startAutoplay();
+                }, { passive: true });
+
+                // Autoplay
+                this.startAutoplay();
+                this.container.addEventListener('mouseenter', () => this.stopAutoplay());
+                this.container.addEventListener('mouseleave', () => this.startAutoplay());
+            }
+
+            goTo(index) {
+                this.currentIndex = ((index % this.total) + this.total) % this.total;
+                this.track.style.transform = `translateX(-${this.currentIndex * 100}%)`;
+                const dots = this.dotsContainer.querySelectorAll('.slider-dot');
+                dots.forEach((d, i) => d.classList.toggle('active', i === this.currentIndex));
+            }
+
+            next() { this.goTo(this.currentIndex + 1); }
+            prev() { this.goTo(this.currentIndex - 1); }
+
+            startAutoplay() {
+                this.stopAutoplay();
+                this.autoplayInterval = setInterval(() => this.next(), 5000);
+            }
+            stopAutoplay() {
+                if (this.autoplayInterval) clearInterval(this.autoplayInterval);
+            }
+        }
+
+        // Initialize all sliders
+        document.querySelectorAll('.slider-container').forEach(el => new Slider(el));
+
+        // ===== SCROLL REVEAL =====
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1, rootMargin: '0px 0px -60px 0px' });
+
+        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+        // ===== NAV SCROLL EFFECT =====
+        const topNav = document.getElementById('topNav');
+        const progressBar = document.getElementById('readingProgress');
+
+        window.addEventListener('scroll', () => {
+            const scrollY = window.scrollY;
+            const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+            
+            // Nav background
+            topNav.classList.toggle('scrolled', scrollY > 20);
+
+            // Reading progress
+            const progress = (scrollY / docHeight) * 100;
+            progressBar.style.width = `${Math.min(progress, 100)}%`;
+
+            // Active nav link
+            const sections = ['walkthrough', 'automation', 'bugs', 'ux', 'conclusion'];
+            const links = document.querySelectorAll('.nav-links a');
+            
+            for (let i = sections.length - 1; i >= 0; i--) {
+                const sec = document.getElementById(sections[i]);
+                if (sec && scrollY >= sec.offsetTop - 200) {
+                    links.forEach(l => l.classList.remove('active'));
+                    links[i].classList.add('active');
+                    break;
+                }
+            }
+        });
+
+        // ===== KEYBOARD NAV FOR SLIDERS =====
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                // Find the slider most in view
+                const sliders = document.querySelectorAll('.slider-container');
+                let bestSlider = null;
+                let bestDist = Infinity;
+                const mid = window.innerHeight / 2;
+                
+                sliders.forEach(s => {
+                    const rect = s.getBoundingClientRect();
+                    const center = rect.top + rect.height / 2;
+                    const dist = Math.abs(center - mid);
+                    if (rect.top < window.innerHeight && rect.bottom > 0 && dist < bestDist) {
+                        bestDist = dist;
+                        bestSlider = s;
+                    }
+                });
+
+                if (bestSlider) {
+                    const btn = bestSlider.querySelector(`[data-dir="${e.key === 'ArrowLeft' ? 'prev' : 'next'}"]`);
+                    if (btn) btn.click();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
