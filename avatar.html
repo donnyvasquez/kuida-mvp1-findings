@@ -84,7 +84,6 @@
         .stage {
             position: fixed;
             bottom: 32px;
-            right: 32px;
             width: 96px;
             height: 96px;
             z-index: 9999;
@@ -1335,7 +1334,7 @@
                     goMute('voice');
                     return;
                 }
-                
+
                 if (isSpeakCommand(normalized)) {
                     const text = DEMO_TEXTS[Math.floor(Math.random() * DEMO_TEXTS.length)];
                     speak(text, () => {
