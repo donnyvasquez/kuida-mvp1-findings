@@ -1,0 +1,1528 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kuida AI Avatar · Flottie</title>
+    <style>
+        :root {
+            --bg-1: #0d0a16;
+            --bg-2: #19122a;
+            --ink: #f3f0ff;
+            --muted: rgba(255, 255, 255, .62);
+            --violet-deep: #52217f;
+            --violet: #7d3eb1;
+            --magenta: #d93c8f;
+            --orange: #f57c22;
+            --yellow: #f3c52f;
+            --cyan: #5fd3ef;
+            --blue: #1488c9;
+            --shadow: rgba(0, 0, 0, .32);
+            --surface-border: rgba(255, 255, 255, .12);
+            --surface-fill: rgba(255, 255, 255, .06);
+            --surface-fill-hover: rgba(255, 255, 255, .14);
+            --surface-border-hover: rgba(255, 255, 255, .26);
+            --button-text: rgba(255, 255, 255, .78);
+            --button-text-active: #ffffff;
+        }
+
+        body.theme-light {
+            --bg-1: #f4efff;
+            --bg-2: #ffffff;
+            --ink: #24153d;
+            --muted: rgba(36, 21, 61, .62);
+            --shadow: rgba(55, 35, 95, .16);
+            --surface-border: rgba(82, 33, 127, .14);
+            --surface-fill: rgba(255, 255, 255, .72);
+            --surface-fill-hover: rgba(255, 255, 255, .94);
+            --surface-border-hover: rgba(82, 33, 127, .24);
+            --button-text: rgba(36, 21, 61, .82);
+            --button-text-active: #24153d;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+            color: var(--ink);
+            background:
+                radial-gradient(circle at 50% 30%, rgba(125, 62, 177, .18), transparent 34%),
+                radial-gradient(circle at 72% 72%, rgba(21, 136, 201, .16), transparent 30%),
+                radial-gradient(circle at 30% 78%, rgba(245, 124, 34, .10), transparent 28%),
+                linear-gradient(180deg, var(--bg-2), var(--bg-1));
+            overflow: hidden;
+            transition: background .35s ease, color .25s ease;
+        }
+
+        body.theme-light {
+            background:
+                radial-gradient(circle at 50% 22%, rgba(125, 62, 177, .12), transparent 34%),
+                radial-gradient(circle at 75% 72%, rgba(21, 136, 201, .10), transparent 28%),
+                radial-gradient(circle at 24% 82%, rgba(245, 124, 34, .08), transparent 24%),
+                linear-gradient(180deg, var(--bg-2), var(--bg-1));
+        }
+
+        .scene {
+            min-height: 100%;
+            display: grid;
+            place-items: center;
+            padding: 32px;
+        }
+
+        .shell {
+            display: grid;
+            justify-items: center;
+            gap: 22px;
+        }
+
+        .stage {
+            position: fixed;
+            bottom: 32px;
+            right: 32px;
+            width: 96px;
+            height: 96px;
+            z-index: 9999;
+            display: grid;
+            place-items: center;
+            isolation: isolate;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            /* Agrega una sombra sutil para despegarlo del fondo */
+            filter: drop-shadow(0 6px 12px var(--shadow));
+        }
+
+        .stage.is-pressing {
+            transform: scale(.95);
+            transition: transform 0.1s ease;
+        }
+
+        #avatar {
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+            pointer-events: none;
+        }
+
+        .title {
+            text-align: right;
+            display: grid;
+            gap: 8px;
+        }
+
+        .title h1 {
+            font-size: clamp(22px, 2.8vw, 34px);
+            line-height: 1.05;
+            margin: 0;
+            letter-spacing: -.03em;
+            font-weight: 800;
+        }
+
+        .title p {
+            margin: 0;
+            color: var(--muted);
+            font-size: clamp(13px, 1.6vw, 15px);
+        }
+
+        .toolbar {
+            display: grid;
+            gap: 14px;
+            justify-items: center;
+        }
+
+        .micAccessBar {
+            display: grid;
+            gap: 8px;
+            justify-items: center;
+        }
+
+        .controlGroup {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .groupLabel {
+            font-size: 11px;
+            letter-spacing: .18em;
+            text-transform: uppercase;
+            color: var(--muted);
+            text-align: center;
+        }
+
+        .btn {
+            border: 1px solid var(--surface-border);
+            background: var(--surface-fill);
+            color: var(--button-text);
+            padding: 10px 14px;
+            border-radius: 999px;
+            cursor: pointer;
+            font-size: 12px;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            transition: .25s ease;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, .08);
+        }
+
+        .btn:hover,
+        .btn.active {
+            background: var(--surface-fill-hover);
+            border-color: var(--surface-border-hover);
+            color: var(--button-text-active);
+            transform: translateY(-1px);
+        }
+
+        body.theme-light .btn {
+            box-shadow: 0 10px 24px rgba(82, 33, 127, .08);
+        }
+
+        #avatar {
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+            filter: drop-shadow(0 28px 38px var(--shadow));
+        }
+
+        .orbWrap {
+            transform-origin: 250px 250px;
+            animation: float 5.4s ease-in-out infinite;
+        }
+
+        .state-listening .orbWrap {
+            animation-duration: 3.8s;
+        }
+
+        .state-speaking .orbWrap {
+            animation-duration: 2.6s;
+        }
+
+        .state-thinking .orbWrap {
+            animation-duration: 4.4s;
+        }
+
+        .state-idle .orbWrap {
+            animation-duration: 5.8s;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0) scale(1);
+            }
+
+            50% {
+                transform: translateY(-10px) scale(1.012);
+            }
+        }
+
+        #groundShadow {
+            transform-origin: 250px 436px;
+            animation: shadow 5.4s ease-in-out infinite;
+        }
+
+        .theme-light #groundShadow {
+            opacity: .12;
+        }
+
+        .state-speaking #groundShadow {
+            animation-duration: 2.6s;
+        }
+
+        .state-listening #groundShadow {
+            animation-duration: 3.8s;
+        }
+
+        @keyframes shadow {
+
+            0%,
+            100% {
+                transform: scaleX(1) scaleY(1);
+                opacity: .24;
+            }
+
+            50% {
+                transform: scaleX(.9) scaleY(.86);
+                opacity: .16;
+            }
+        }
+
+        .inner-flow {
+            transform-origin: 250px 250px;
+            animation: swirl 9s ease-in-out infinite alternate;
+        }
+
+        .state-listening .inner-flow {
+            animation-duration: 5.4s;
+        }
+
+        .state-thinking .inner-flow {
+            animation-duration: 7s;
+        }
+
+        .state-speaking .inner-flow {
+            animation-duration: 2.2s;
+        }
+
+        @keyframes swirl {
+            0% {
+                transform: rotate(-4deg) scale(1);
+            }
+
+            100% {
+                transform: rotate(5deg) scale(1.02);
+            }
+        }
+
+        .blob {
+            transform-origin: 250px 250px;
+            animation: pulse 5.5s ease-in-out infinite;
+        }
+
+        .state-listening .blob {
+            animation-duration: 2.1s;
+        }
+
+        .state-speaking .blob {
+            animation-duration: .92s;
+        }
+
+        .state-thinking .blob {
+            animation-duration: 3.1s;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.018);
+            }
+        }
+
+        .innerAura {
+            mix-blend-mode: screen;
+            opacity: .82;
+        }
+
+        .gloss {
+            opacity: .6;
+            mix-blend-mode: screen;
+        }
+
+        .depthRing {
+            opacity: .2;
+            mix-blend-mode: multiply;
+        }
+
+        .stateLabel {
+            font-size: 11px;
+            letter-spacing: .18em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .statusRing,
+        .breathRing,
+        .speakRing,
+        .thinkDot,
+        .listenHalo,
+        .muteMark,
+        .offlineShell,
+        .offlinePulse,
+        .thinkingShell,
+        .thinkingPulse {
+            opacity: 0;
+            transition: opacity .25s ease;
+        }
+
+        .state-idle .statusRing.idle,
+        .state-listening .statusRing.listening,
+        .state-speaking .statusRing.speaking,
+        .state-thinking .statusRing.thinking,
+        .state-mute .statusRing.mute,
+        .state-offline .statusRing.offline {
+            opacity: 1;
+        }
+
+        .statusRing {
+            transform-origin: 250px 250px;
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, .12));
+        }
+
+        body.theme-light .statusRing {
+            filter: drop-shadow(0 0 8px rgba(125, 62, 177, .18));
+        }
+
+        .state-idle .statusRing.idle {
+            animation: idleRing 3.6s ease-in-out infinite;
+        }
+
+        .state-listening .statusRing.listening.r1 {
+            animation: halo 1.8s ease-out infinite;
+        }
+
+        .state-listening .statusRing.listening.r2 {
+            animation: halo 1.8s ease-out .6s infinite;
+        }
+
+        .state-listening .statusRing.listening.r3 {
+            animation: halo 1.8s ease-out 1.2s infinite;
+        }
+
+        .state-speaking .statusRing.speaking.r1 {
+            animation: speak 1s ease-in-out infinite;
+        }
+
+        .state-speaking .statusRing.speaking.r2 {
+            animation: speak 1s ease-in-out .18s infinite;
+        }
+
+        .state-speaking .statusRing.speaking.r3 {
+            animation: speak 1s ease-in-out .36s infinite;
+        }
+
+        .state-thinking .statusRing.thinking.r1 {
+            animation: thinkRingAlternate 10.4s ease-in-out infinite;
+            opacity: .96;
+        }
+
+        .state-thinking .statusRing.thinking.r2 {
+            animation: thinkRingAlternateReverse 12.8s ease-in-out infinite;
+            opacity: .9;
+        }
+
+        .state-thinking .thinkingPulse.p1 {
+            animation: offlinePulse 3.6s ease-out infinite;
+        }
+
+        .state-thinking .thinkingPulse.p2 {
+            animation: offlinePulse 3.6s ease-out 1.2s infinite;
+        }
+
+        .state-thinking .thinkingShell,
+        .state-thinking .thinkingPulse {
+            opacity: 1;
+        }
+
+        .state-thinking .blob {
+            opacity: .7;
+        }
+
+        .state-thinking .gloss,
+        .state-thinking .orbGlossPrimary,
+        .state-thinking .orbGlossSecondary,
+        .state-thinking .orbGlossTertiary {
+            opacity: .64;
+        }
+
+        .state-thinking .depthRing {
+            opacity: .14;
+        }
+
+        .state-mute .statusRing.mute {
+            animation: muteRing 2.4s ease-in-out infinite;
+        }
+
+        .state-offline .statusRing.offline.r1 {
+            animation: none;
+            opacity: .16;
+        }
+
+        .state-offline .statusRing.offline.r2 {
+            animation: none;
+            opacity: .2;
+        }
+
+        @keyframes idleRing {
+
+            0%,
+            100% {
+                transform: scale(.985);
+                opacity: .2;
+            }
+
+            50% {
+                transform: scale(1.03);
+                opacity: .34;
+            }
+        }
+
+        @keyframes thinkRingAlternate {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            50% {
+                transform: rotate(360deg);
+            }
+
+            100% {
+                transform: rotate(0deg);
+            }
+        }
+
+        @keyframes thinkRingAlternateReverse {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            50% {
+                transform: rotate(-360deg);
+            }
+
+            100% {
+                transform: rotate(0deg);
+            }
+        }
+
+        .state-mute .muteMark {
+            opacity: 1;
+        }
+
+        .state-offline .offlineShell,
+        .state-offline .offlinePulse {
+            opacity: .42;
+        }
+
+        .state-offline .inner-flow,
+        .state-offline .gloss,
+        .state-offline .innerAura {
+            opacity: .05;
+            transition: opacity .35s ease;
+        }
+
+        .state-offline .blob {
+            animation: none;
+            transform: scale(.978);
+            filter: grayscale(.42) brightness(.72) saturate(.58);
+            opacity: .52;
+        }
+
+        .state-offline .orbWrap {
+            animation: none;
+            transform: translateY(0) scale(.988);
+            opacity: .68;
+        }
+
+        .state-mute .blob {
+            animation-duration: 4.8s;
+            scale: 0.5;
+        }
+
+        .state-mute .muteMark.slash {
+            animation: muteSlash 1.8s ease-in-out infinite;
+            transform-origin: 250px 250px;
+        }
+
+        .state-mute .muteMark.ring {
+            animation: muteRing 2.4s ease-in-out infinite;
+            transform-origin: 250px 250px;
+        }
+
+        .state-offline .offlinePulse.p1 {
+            animation: offlinePulse 3.2s ease-out infinite;
+        }
+
+        .state-offline .offlinePulse.p2 {
+            animation: offlinePulse 3.2s ease-out 1.1s infinite;
+        }
+
+        /* Offline Badge Animations */
+        .offlineBadge {
+            opacity: 0;
+            transition: opacity .35s ease;
+            transform-origin: 384px 116px;
+        }
+
+        .state-offline .offlineBadge {
+            opacity: 1;
+        }
+
+        .state-offline .offlineBadge .badgeCore {
+            animation: offlineBadgeGlow 2s ease-in-out infinite;
+        }
+
+        .state-offline .offlineBadge .badgePing {
+            animation: offlineBadgePing 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
+
+        @keyframes offlineBadgeGlow {
+
+            0%,
+            100% {
+                fill: #d94242;
+                filter: drop-shadow(0 0 2px rgba(217, 66, 66, .2));
+                transform: scale(0.95);
+            }
+
+            50% {
+                fill: #ff5252;
+                filter: drop-shadow(0 0 6px rgba(255, 82, 82, .8));
+                transform: scale(1.05);
+            }
+        }
+
+        @keyframes offlineBadgePing {
+            0% {
+                transform: scale(1);
+                opacity: .8;
+            }
+
+            70%,
+            100% {
+                transform: scale(2.4);
+                opacity: 0;
+            }
+        }
+
+        @keyframes muteSlash {
+
+            0%,
+            100% {
+                opacity: .52;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: .9;
+                transform: scale(1.03);
+            }
+        }
+
+        @keyframes muteRing {
+
+            0%,
+            100% {
+                opacity: .14;
+                transform: scale(.98);
+            }
+
+            50% {
+                opacity: .28;
+                transform: scale(1.03);
+            }
+        }
+
+        @keyframes offlinePulse {
+            0% {
+                transform: scale(.94);
+                opacity: .16;
+            }
+
+            100% {
+                transform: scale(1.1);
+                opacity: 0;
+            }
+        }
+
+        .breathRing,
+        .speakRing,
+        .thinkDot,
+        .listenHalo {
+            opacity: 0;
+            transition: opacity .25s ease;
+        }
+
+        .state-idle .breathRing {
+            opacity: 1;
+        }
+
+        .state-idle .breathRing {
+            transform-origin: 250px 250px;
+            animation: breathe 3.6s ease-in-out infinite;
+        }
+
+        @keyframes breathe {
+
+            0%,
+            100% {
+                transform: scale(.98);
+                opacity: .12;
+            }
+
+            50% {
+                transform: scale(1.045);
+                opacity: .2;
+            }
+        }
+
+        .state-listening .listenHalo.h1 {
+            animation: halo 1.8s ease-out infinite;
+        }
+
+        .state-listening .listenHalo.h2 {
+            animation: halo 1.8s ease-out .6s infinite;
+        }
+
+        .state-listening .listenHalo.h3 {
+            animation: halo 1.8s ease-out 1.2s infinite;
+        }
+
+        @keyframes halo {
+            0% {
+                transform: scale(.88);
+                opacity: .36;
+            }
+
+            100% {
+                transform: scale(1.22);
+                opacity: 0;
+            }
+        }
+
+        .state-speaking .speakRing.r1 {
+            animation: speak 1s ease-in-out infinite;
+        }
+
+        .state-speaking .speakRing.r2 {
+            animation: speak 1s ease-in-out .18s infinite;
+        }
+
+        .state-speaking .speakRing.r3 {
+            animation: speak 1s ease-in-out .36s infinite;
+        }
+
+        @keyframes speak {
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: .18;
+            }
+
+            50% {
+                transform: scale(1.06);
+                opacity: .32;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="scene">
+        <div class="shell">
+
+            <div class="stage">
+                <svg id="avatar" viewBox="0 0 500 500" class="state-idle" xmlns="http://www.w3.org/2000/svg"
+                    aria-label="Kuida AI Avatar">
+                    <defs>
+                        <radialGradient id="bgGlow" cx="50%" cy="45%" r="58%">
+                            <stop offset="0%" stop-color="rgba(255,255,255,.25)" />
+                            <stop offset="100%" stop-color="rgba(255,255,255,0)" />
+                        </radialGradient>
+
+                        <radialGradient id="orbBase" cx="34%" cy="26%" r="72%">
+                            <stop offset="0%" stop-color="#a95ae0" />
+                            <stop offset="20%" stop-color="#7d3eb1" />
+                            <stop offset="55%" stop-color="#34155f" />
+                            <stop offset="100%" stop-color="#120922" />
+                        </radialGradient>
+
+                        <radialGradient id="orbShine" cx="28%" cy="22%" r="40%">
+                            <stop offset="0%" stop-color="rgba(255,255,255,.92)" />
+                            <stop offset="32%" stop-color="rgba(255,255,255,.32)" />
+                            <stop offset="100%" stop-color="rgba(255,255,255,0)" />
+                        </radialGradient>
+
+                        <linearGradient id="rimLight" x1="0" x2="1">
+                            <stop offset="0%" stop-color="rgba(255,255,255,.34)" />
+                            <stop offset="100%" stop-color="rgba(255,255,255,0)" />
+                        </linearGradient>
+
+                        <radialGradient id="shadowGrad" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" stop-color="rgba(0,0,0,.38)" />
+                            <stop offset="100%" stop-color="rgba(0,0,0,0)" />
+                        </radialGradient>
+
+                        <filter id="softBlur" x="-20%" y="-20%" width="140%" height="140%">
+                            <feGaussianBlur stdDeviation="8" />
+                        </filter>
+
+                        <clipPath id="orbClip">
+                            <circle cx="250" cy="250" r="160" />
+                        </clipPath>
+                        <linearGradient id="flowPurple" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stop-color="#8f59dd" />
+                            <stop offset="100%" stop-color="#52217f" />
+                        </linearGradient>
+                        <linearGradient id="flowMagenta" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stop-color="#ff63b2" />
+                            <stop offset="100%" stop-color="#cf2b84" />
+                        </linearGradient>
+                        <linearGradient id="flowOrange" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stop-color="#ff9e49" />
+                            <stop offset="100%" stop-color="#f57c22" />
+                        </linearGradient>
+                        <linearGradient id="flowYellow" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stop-color="#ffe06c" />
+                            <stop offset="100%" stop-color="#f3c52f" />
+                        </linearGradient>
+                        <linearGradient id="flowCyan" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stop-color="#96efff" />
+                            <stop offset="100%" stop-color="#5fd3ef" />
+                        </linearGradient>
+                        <linearGradient id="flowBlue" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stop-color="#39c2f7" />
+                            <stop offset="100%" stop-color="#1488c9" />
+                        </linearGradient>
+                        <radialGradient id="coreGlow" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" stop-color="rgba(255,255,255,.8)" />
+                            <stop offset="55%" stop-color="rgba(255,255,255,.14)" />
+                            <stop offset="100%" stop-color="rgba(255,255,255,0)" />
+                        </radialGradient>
+
+                        <linearGradient id="idleRingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#7d3eb1" />
+                            <stop offset="32%" stop-color="#d93c8f" />
+                            <stop offset="66%" stop-color="#5fd3ef" />
+                            <stop offset="100%" stop-color="#1488c9" />
+                        </linearGradient>
+                        <linearGradient id="listenRingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#5fd3ef" />
+                            <stop offset="45%" stop-color="#f3c52f" />
+                            <stop offset="100%" stop-color="#d93c8f" />
+                        </linearGradient>
+                        <linearGradient id="listenRingGrad2" x1="100%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="#1488c9" />
+                            <stop offset="50%" stop-color="#5fd3ef" />
+                            <stop offset="100%" stop-color="#f3c52f" />
+                        </linearGradient>
+                        <linearGradient id="listenRingGrad3" x1="0%" y1="100%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="#7d3eb1" />
+                            <stop offset="100%" stop-color="#5fd3ef" />
+                        </linearGradient>
+                        <linearGradient id="speakRingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#f57c22" />
+                            <stop offset="40%" stop-color="#f3c52f" />
+                            <stop offset="72%" stop-color="#d93c8f" />
+                            <stop offset="100%" stop-color="#7d3eb1" />
+                        </linearGradient>
+                        <linearGradient id="speakRingGrad2" x1="100%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="#f57c22" />
+                            <stop offset="55%" stop-color="#f3c52f" />
+                            <stop offset="100%" stop-color="#5fd3ef" />
+                        </linearGradient>
+                        <linearGradient id="speakRingGrad3" x1="0%" y1="100%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="#d93c8f" />
+                            <stop offset="100%" stop-color="#f57c22" />
+                        </linearGradient>
+                        <linearGradient id="thinkRingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#7d3eb1" />
+                            <stop offset="30%" stop-color="#5fd3ef" />
+                            <stop offset="60%" stop-color="#1488c9" />
+                            <stop offset="100%" stop-color="#7d3eb1" />
+                        </linearGradient>
+                        <linearGradient id="thinkRingGrad2" x1="100%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="#d93c8f" />
+                            <stop offset="50%" stop-color="#5fd3ef" />
+                            <stop offset="100%" stop-color="#f3c52f" />
+                        </linearGradient>
+                        <linearGradient id="muteRingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#8b4fd1" />
+                            <stop offset="55%" stop-color="#d93c8f" />
+                            <stop offset="100%" stop-color="#7d3eb1" />
+                        </linearGradient>
+                        <linearGradient id="offlineRingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="rgba(125,62,177,.55)" />
+                            <stop offset="50%" stop-color="rgba(95,211,239,.36)" />
+                            <stop offset="100%" stop-color="rgba(255,255,255,.18)" />
+                        </linearGradient>
+                        <linearGradient id="offlineRingGrad2" x1="100%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="rgba(95,211,239,.26)" />
+                            <stop offset="100%" stop-color="rgba(255,255,255,.10)" />
+                        </linearGradient>
+                    </defs>
+
+                    <ellipse id="groundShadow" cx="250" cy="436" rx="112" ry="26" fill="url(#shadowGrad)" />
+
+                    <g class="statusRing idle">
+                        <circle cx="250" cy="250" r="178" fill="none" stroke="url(#idleRingGrad)" stroke-width="7"
+                            stroke-linecap="round" />
+                    </g>
+
+                    <g class="statusRing listening r1">
+                        <circle cx="250" cy="250" r="178" fill="none" stroke="url(#listenRingGrad)" stroke-width="6"
+                            stroke-linecap="round" />
+                    </g>
+                    <g class="statusRing listening r2">
+                        <circle cx="250" cy="250" r="166" fill="none" stroke="url(#listenRingGrad2)" stroke-width="4"
+                            stroke-linecap="round" />
+                    </g>
+                    <g class="statusRing listening r3">
+                        <circle cx="250" cy="250" r="154" fill="none" stroke="url(#listenRingGrad3)" stroke-width="2.5"
+                            stroke-linecap="round" />
+                    </g>
+
+                    <g class="statusRing speaking r1">
+                        <circle cx="250" cy="250" r="176" fill="none" stroke="url(#speakRingGrad)" stroke-width="9"
+                            stroke-linecap="round" />
+                    </g>
+                    <g class="statusRing speaking r2">
+                        <circle cx="250" cy="250" r="162" fill="none" stroke="url(#speakRingGrad2)" stroke-width="5"
+                            stroke-linecap="round" />
+                    </g>
+                    <g class="statusRing speaking r3">
+                        <circle cx="250" cy="250" r="148" fill="none" stroke="url(#speakRingGrad3)" stroke-width="3"
+                            stroke-linecap="round" />
+                    </g>
+
+                    <g class="statusRing thinking r1">
+                        <circle cx="250" cy="250" r="176" fill="none" stroke="url(#thinkRingGrad)" stroke-width="6"
+                            stroke-dasharray="42 18 16 22" stroke-linecap="round" />
+                    </g>
+                    <g class="statusRing thinking r2">
+                        <circle cx="250" cy="250" r="160" fill="none" stroke="url(#thinkRingGrad2)" stroke-width="3"
+                            stroke-dasharray="14 20" stroke-linecap="round" />
+                    </g>
+                    <g class="thinkingPulse p1">
+                        <circle cx="250" cy="250" r="174" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="2" />
+                    </g>
+                    <g class="thinkingPulse p2">
+                        <circle cx="250" cy="250" r="174" fill="none" stroke="rgba(95,211,239,.07)" stroke-width="2" />
+                    </g>
+                    <g class="thinkingShell">
+                        <circle cx="250" cy="250" r="168" fill="rgba(10,10,18,.08)" />
+                        <circle cx="250" cy="250" r="168" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="1.5"
+                            stroke-dasharray="8 10" />
+                        <circle cx="250" cy="250" r="148" fill="none" stroke="rgba(255,255,255,.04)" stroke-width="7" />
+                    </g>
+
+                    <g class="breathRing">
+                        <circle cx="250" cy="250" r="186" fill="none" stroke="rgba(255,255,255,.12)"
+                            stroke-width="1.5" />
+                    </g>
+
+                    <g class="statusRing mute">
+                        <circle cx="250" cy="250" r="178" fill="none" stroke="url(#muteRingGrad)" stroke-width="7"
+                            stroke-linecap="round" />
+                    </g>
+                    <g class="muteMark ring">
+                        <circle cx="250" cy="250" r="182" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="2" />
+                    </g>
+                    <g class="muteMark">
+                        <circle cx="250" cy="250" r="150" fill="none" stroke="rgba(217,60,143,.10)" stroke-width="10" />
+                    </g>
+
+
+                    <g class="statusRing offline r1">
+                        <circle cx="250" cy="250" r="176" fill="none" stroke="url(#offlineRingGrad)" stroke-width="5"
+                            stroke-dasharray="10 12" stroke-linecap="round" />
+                    </g>
+                    <g class="statusRing offline r2">
+                        <circle cx="250" cy="250" r="162" fill="none" stroke="url(#offlineRingGrad2)" stroke-width="2.5"
+                            stroke-dasharray="6 14" stroke-linecap="round" />
+                    </g>
+                    <g class="offlinePulse p1">
+                        <circle cx="250" cy="250" r="174" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="2" />
+                    </g>
+                    <g class="offlinePulse p2">
+                        <circle cx="250" cy="250" r="174" fill="none" stroke="rgba(95,211,239,.08)" stroke-width="2" />
+                    </g>
+                    <g class="offlineShell">
+                        <circle cx="250" cy="250" r="168" fill="rgba(10,10,18,.18)" />
+                        <circle cx="250" cy="250" r="168" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="2"
+                            stroke-dasharray="8 10" />
+                        <circle cx="250" cy="250" r="146" fill="none" stroke="rgba(255,255,255,.04)" stroke-width="8" />
+                    </g>
+
+                    <g class="offlineBadge">
+                        <!-- Dot is ~31 SVG units, which is 6px diameter when scaled down to 96px widget -->
+                        <circle class="badgePing" cx="384" cy="116" r="15.5" fill="none" stroke="#ff5252"
+                            stroke-width="4" />
+                        <circle class="badgeCore" cx="384" cy="116" r="15.5" fill="#d94242" />
+                    </g>
+
+                    <g class="orbWrap">
+                        <g class="blob">
+                            <circle cx="250" cy="250" r="160" fill="url(#orbBase)" />
+                            <circle class="depthRing" cx="250" cy="250" r="160" fill="none" stroke="#000"
+                                stroke-width="18" />
+                            <circle cx="250" cy="250" r="160" fill="url(#bgGlow)" opacity=".22" />
+                        </g>
+
+                        <g clip-path="url(#orbClip)">
+                            <circle class="gloss orbGlossPrimary" cx="212" cy="186" r="122" fill="url(#orbShine)" />
+                            <ellipse class="gloss orbGlossSecondary" cx="190" cy="141" rx="82" ry="36"
+                                transform="rotate(-24 190 141)" fill="rgba(255,255,255,.16)" />
+                            <ellipse class="gloss orbGlossTertiary" cx="286" cy="306" rx="92" ry="64"
+                                transform="rotate(22 286 306)" fill="rgba(255,255,255,.05)" />
+                            <path d="M141 114C112 155 95 208 95 265C95 351 131 389 160 415" fill="none"
+                                stroke="url(#rimLight)" stroke-width="6" stroke-linecap="round" opacity=".54" />
+                        </g>
+                    </g>
+
+                    <g class="muteMark slash muteOverlay">
+                        <line x1="154" y1="346" x2="346" y2="154" stroke="rgba(217,60,143,.82)" stroke-width="10"
+                            stroke-linecap="round" />
+                    </g>
+                </svg>
+            </div>
+
+            <div class="toolbar">
+                <div class="micAccessBar">
+                    <div class="groupLabel">Microphone</div>
+                    <button class="btn" id="enableMicBtn" type="button">Enable microphone</button>
+                </div>
+                <div>
+                    <div class="groupLabel">Theme</div>
+                    <div class="controlGroup controls themeControls">
+                        <button class="btn active" data-theme="dark">Dark</button>
+                        <button class="btn" data-theme="light">Light</button>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="groupLabel">State</div>
+                    <div class="controlGroup controls stateControls">
+                        <button class="btn active" data-state="idle">Idle</button>
+                        <button class="btn" data-state="listening">Listening</button>
+                        <button class="btn" data-state="speaking">Speaking</button>
+                        <button class="btn" data-state="thinking">Thinking</button>
+                        <button class="btn" data-state="mute">Mute</button>
+                        <button class="btn" data-state="offline">Offline</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="title">
+                <div class="stateLabel" id="stateLabel">idle</div>
+                <h1>Kuida AI Avatar</h1>
+                <p id="voiceStatus" aria-live="polite">Awaiting wake phrase: “Hola Kuida”.</p>
+                <p id="liveTranscript"
+                    style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);opacity:.7;min-height:1.4em;">
+                </p>
+                <p>La esfera permanece limpia y el borde multicolor comunica el estado del avatar.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const avatar = document.getElementById('avatar');
+        const stage = document.querySelector('.stage');
+        const label = document.getElementById('stateLabel');
+        const voiceStatus = document.getElementById('voiceStatus');
+        const stateButtons = [...document.querySelectorAll('[data-state]')];
+        const themeButtons = [...document.querySelectorAll('[data-theme]')];
+        const enableMicBtn = document.getElementById('enableMicBtn');
+
+        const LONG_PRESS_MS = 1500;
+
+        // ===== KEYWORD-BASED COMMAND DETECTION =====
+        // All commands require: intent keyword + name keyword
+        const NAME_KEYWORDS = [
+            'kuida', 'cuida', 'quida', 'guida', 'cuda', 'kuda', 'vida',
+        ];
+
+        const WAKE_KEYWORDS = [
+            'hola', 'ola', 'oye', 'hey', 'ei', 'escucha',
+            'despierta', 'activa', 'activar', 'atencion',
+        ];
+
+        const MUTE_KEYWORDS = [
+            'mute', 'miut', 'mut', 'silencio', 'silenciate', 'callate',
+            'calla', 'para', 'detente', 'basta', 'omite',
+            'no escuches', 'no me escuches', 'deja de escuchar',
+        ];
+
+        const SPEAK_KEYWORDS = [
+            'dime algo', 'cuentame', 'sobre ti', 'que haces', 'quien eres', 'hablame'
+        ];
+
+        const DEMO_TEXTS = [
+            'A diferencia de un software pasivo, el núcleo de Kuida es un agente de IA proactivo que utiliza procesamiento de lenguaje natural para responder consultas en lenguaje sencillo, generar guías adaptadas, recordar plazos importantes y aprender de la retroalimentación de los usuarios para mejorar continuamente. La experiencia está diseñada como "voice-first": la interacción principal se realiza por voz para favorecer el uso manos-libres en entornos productivos; como respaldo y para tareas de documentación y seguimiento se ofrece además un chat textual completo.',
+            'Kuida ofrecerá licencias estudiantiles para que los futuros profesionales de HSEQ, ISO y SST desarrollen habilidades prácticas. Al estar expuestos sistemáticamente a la IA, obtendrán una ventaja competitiva única para convertirse en la próxima generación de consultores tecnológicamente fluidos.',
+            'Las MiPyMEs enfrentan un panorama crítico en SST por falta de recursos, conocimiento y acceso a soluciones asequibles. El costo humano y económico de la inacción es altísimo: millones de vidas afectadas y pérdidas de productividad de varios puntos del PIB.',
+            'Con el apoyo de una entidad financiadora, será posible prototipar, validar y escalar esta solución. Nos comprometemos a priorizar data de calidad, asegurar la implementación efectiva de sistemas de gestión y alcanzar, como objetivo mínimo, un 85% de cumplimiento en las MiPyMEs participantes. Esto permitirá traducir la tecnología en reducción real de siniestralidad, mayor formalización y una fuerte viralización de prácticas de SST en las regiones intervenidas.'
+        ];
+
+        function hasName(text) {
+            return NAME_KEYWORDS.some(k => text.includes(k));
+        }
+
+        function isWakeCommand(normalizedText) {
+            const hasWakeIntent = WAKE_KEYWORDS.some(k => normalizedText.includes(k));
+            return hasWakeIntent && hasName(normalizedText);
+        }
+
+        function isMuteCommand(normalizedText) {
+            const hasMuteIntent = MUTE_KEYWORDS.some(k => normalizedText.includes(k));
+            return hasMuteIntent && hasName(normalizedText);
+        }
+
+        function isSpeakCommand(normalizedText) {
+            return SPEAK_KEYWORDS.some(k => normalizedText.includes(k));
+        }
+
+        let current = 'idle';
+        let pressTimer = null;
+        let longPressTriggered = false;
+        let recognition = null;
+        let recognitionEnabled = false;
+        let wakeModeActive = true;
+        let isSpeaking = false;
+        let spanishVoice = null;
+
+        // ===== TTS ENGINE (Voice Selection) =====
+        function loadSpanishVoice() {
+            const voices = speechSynthesis.getVoices();
+            if (!voices.length) return;
+
+            // Known high-quality Latin female voices across platforms
+            const premiumHispana = [
+                'paulina', // macOS (México)
+                'sabina', // Windows (México)
+                'monica', // macOS (España)
+                'helena', // Windows (España)
+                'victoria', // macOS (Latinoamérica)
+                'google español', // Chrome Android/PC
+                'google us spanish', // Chrome
+                'espanol', 'español' // Fallback hints
+            ];
+
+            const preferredLocales = ['es-CO', 'es-MX', 'es-419', 'es-US', 'es-AR', 'es-CL', 'es-ES'];
+
+            // Give a score to each voice
+            function getVoiceScore(v) {
+                if (!v.lang.toLowerCase().startsWith('es')) return -1; // Must be Spanish
+
+                const name = v.name.toLowerCase();
+                let score = 0;
+
+                // Massive bonus for known premium female voices
+                if (premiumHispana.some(premium => name.includes(premium))) score += 100;
+                if (name.includes('female') || name.includes('femenina') || name.includes('mujer')) score += 50;
+
+                // Bonus for our preferred Latin locales
+                const localeIndex = preferredLocales.indexOf(v.lang);
+                if (localeIndex !== -1) {
+                    score += (20 - localeIndex); // Values from 14 to 20 depending on priority
+                }
+
+                // Bonus for native/local voices (reduce lag)
+                if (v.localService) score += 5;
+
+                return score;
+            }
+
+            // Filter out non-Spanish voices and sort by score descending
+            const validVoices = voices
+                .filter(v => getVoiceScore(v) > -1)
+                .sort((a, b) => getVoiceScore(b) - getVoiceScore(a));
+
+            if (validVoices.length > 0) {
+                spanishVoice = validVoices[0];
+
+                // Debug info
+                const transcriptEl = document.getElementById('liveTranscript');
+                if (transcriptEl) {
+                    transcriptEl.textContent = `🔈 Voz: ${spanishVoice.name} (${spanishVoice.lang})`;
+                    setTimeout(() => { if (transcriptEl.textContent.startsWith('🔈')) transcriptEl.textContent = ''; }, 4000);
+                }
+            }
+        }
+
+        // Load voices (they load async in some browsers)
+        speechSynthesis.addEventListener('voiceschanged', loadSpanishVoice);
+        loadSpanishVoice();
+
+        function speak(text, onDone) {
+            if (!('speechSynthesis' in window)) {
+                if (onDone) onDone();
+                return;
+            }
+
+            // Pause recognition while speaking to avoid echo
+            isSpeaking = true;
+            if (recognition) {
+                try { recognition.abort(); } catch (_) { }
+            }
+
+            setState('speaking');
+            setVoiceStatus('Hablando...');
+
+            // Only cancel if it's currently speaking. Calling cancel indiscriminately
+            // right before speak causes silent failures in Chrome.
+            if (speechSynthesis.speaking) {
+                speechSynthesis.cancel();
+            }
+
+            const utterance = new SpeechSynthesisUtterance(text);
+
+            // Critical fix for Chrome/Safari: hold a global reference to the utterance
+            // so it doesn't get garbage collected before it finishes speaking!
+            window.currentUtterance = utterance;
+
+            utterance.lang = 'es-CO';
+            utterance.rate = 1.05;
+            utterance.pitch = 1.0;
+            utterance.volume = 1;
+            if (spanishVoice) utterance.voice = spanishVoice;
+
+            utterance.onend = () => {
+                isSpeaking = false;
+                window.currentUtterance = null;
+                if (onDone) onDone();
+                // Resume recognition after a short delay
+                setTimeout(() => {
+                    if (recognitionEnabled && !isSpeaking) startVoiceRecognition();
+                }, 350);
+            };
+
+            utterance.onerror = () => {
+                isSpeaking = false;
+                window.currentUtterance = null;
+                if (onDone) onDone();
+                setTimeout(() => {
+                    if (recognitionEnabled && !isSpeaking) startVoiceRecognition();
+                }, 350);
+            };
+
+            // Small delay helps prevent the "cancel-block" bug in Chrome
+            setTimeout(() => {
+                speechSynthesis.speak(utterance);
+            }, 50);
+        }
+
+        function setState(state) {
+            current = state;
+            avatar.className.baseVal = 'state-' + state;
+            label.textContent = state;
+            stateButtons.forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.state === state);
+            });
+        }
+
+        function setVoiceStatus(message) {
+            if (voiceStatus) {
+                voiceStatus.textContent = message;
+            }
+        }
+
+        function setTheme(theme) {
+            document.body.classList.remove('theme-dark', 'theme-light');
+            document.body.classList.add('theme-' + theme);
+            themeButtons.forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.theme === theme);
+            });
+        }
+
+        function normalizeTranscript(value) {
+            const accents = { 'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u', 'ü': 'u', 'ñ': 'n' };
+            return value
+                .toLowerCase()
+                .replace(/[áéíóúüñ]/g, letter => accents[letter] || letter)
+                .replace(/[,.;:!?¡¿]/g, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function includesAnyPhrase(text, phrases) {
+            return phrases.some(phrase => text.includes(phrase));
+        }
+
+        function enterWakeMode() {
+            wakeModeActive = true;
+            if (current !== 'mute' && current !== 'offline') {
+                setState('idle');
+            }
+            setVoiceStatus('Awaiting wake phrase: “Hola Kuida”.');
+        }
+
+        function goListening(source = 'interaction') {
+            wakeModeActive = false;
+
+            // Speak a greeting, then transition to listening
+            const greetings = [
+                'Te escucho.',
+                'Aquí estoy, dime.',
+                'Estoy escuchándote.',
+                'Sí, dime.',
+            ];
+            const greeting = greetings[Math.floor(Math.random() * greetings.length)];
+
+            speak(greeting, () => {
+                setState('listening');
+                setVoiceStatus('Escuchando...');
+            });
+        }
+
+        function goMute(source = 'interaction') {
+            wakeModeActive = false;
+
+            if (source === 'voice') {
+                speak('Entendido, me quedo en silencio.', () => {
+                    setState('mute');
+                    setVoiceStatus('Silenciado. Toca el avatar para reactivar.');
+                });
+            } else {
+                setState('mute');
+                setVoiceStatus('Silenciado. Toca el avatar para reactivar.');
+            }
+        }
+
+        function handleTap() {
+            if (current === 'mute') {
+                goListening('tap');
+                return;
+            }
+            if (current !== 'listening') {
+                goListening('tap');
+            }
+        }
+
+        function clearPressTimer() {
+            if (pressTimer) {
+                clearTimeout(pressTimer);
+                pressTimer = null;
+            }
+        }
+
+        function onPressStart() {
+            longPressTriggered = false;
+            stage.classList.add('is-pressing');
+
+            if (current === 'listening') {
+                clearPressTimer();
+                pressTimer = window.setTimeout(() => {
+                    longPressTriggered = true;
+                    goMute('press');
+                }, LONG_PRESS_MS);
+            }
+        }
+
+        function onPressEnd() {
+            stage.classList.remove('is-pressing');
+            clearPressTimer();
+        }
+
+        function handleStageClick() {
+            if (longPressTriggered) {
+                longPressTriggered = false;
+                return;
+            }
+            handleTap();
+        }
+
+        function handleTranscript(transcript) {
+            const normalized = normalizeTranscript(transcript);
+            if (!normalized) return;
+
+            // Ignore transcripts while speaking (echo prevention)
+            if (isSpeaking) return;
+
+            if ((wakeModeActive || current === 'idle') && isWakeCommand(normalized)) {
+                goListening('voice');
+                return;
+            }
+
+            if (current === 'listening') {
+                if (isMuteCommand(normalized)) {
+                    goMute('voice');
+                    return;
+                }
+                
+                if (isSpeakCommand(normalized)) {
+                    const text = DEMO_TEXTS[Math.floor(Math.random() * DEMO_TEXTS.length)];
+                    speak(text, () => {
+                        setState('listening');
+                        setVoiceStatus('Escuchando...');
+                    });
+                    return;
+                }
+            }
+        }
+
+        async function requestMicrophoneAccess(source = 'auto') {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                setVoiceStatus('Microphone API is not available in this browser.');
+                return false;
+            }
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                stream.getTracks().forEach(track => track.stop());
+                setVoiceStatus(source === 'manual'
+                    ? 'Microphone enabled. Awaiting wake phrase: “Hola Kuida”.'
+                    : 'Microphone ready. Awaiting wake phrase: “Hola Kuida”.');
+                return true;
+            } catch (error) {
+                if (source === 'manual') {
+                    setVoiceStatus('Microphone permission was denied or is unavailable.');
+                }
+                return false;
+            }
+        }
+
+        function setupSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+            if (!SpeechRecognition) {
+                setVoiceStatus('Voice control is not supported in this browser.');
+                return;
+            }
+
+            recognition = new SpeechRecognition();
+            recognition.lang = 'es-CO';
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.maxAlternatives = 3;
+
+            recognition.onstart = () => {
+                recognitionEnabled = true;
+                if (wakeModeActive || current === 'idle') {
+                    setVoiceStatus('Awaiting wake phrase: “Hola Kuida”.');
+                }
+            };
+
+            recognition.onresult = event => {
+                const transcriptEl = document.getElementById('liveTranscript');
+                for (let i = event.resultIndex; i < event.results.length; i += 1) {
+                    const alternatives = Array.from(event.results[i]);
+                    // Show what the recognizer hears for debugging
+                    const preview = alternatives.map(a => a.transcript).join(' | ');
+                    if (transcriptEl) transcriptEl.textContent = '🎤 ' + preview;
+                    // Check EACH alternative independently
+                    for (const alt of alternatives) {
+                        handleTranscript(alt.transcript);
+                    }
+                }
+            };
+
+            recognition.onerror = event => {
+                if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                    recognitionEnabled = false;
+                    setVoiceStatus('Microphone permission is required for voice control.');
+                    return;
+                }
+
+                // Silently ignore expected errors
+                if (event.error === 'aborted' || event.error === 'no-speech') {
+                    if (!isSpeaking && (wakeModeActive || current === 'idle')) {
+                        setVoiceStatus('Awaiting wake phrase: “Hola Kuida”.');
+                    }
+                    return;
+                }
+
+                setVoiceStatus('Voice error: ' + event.error + '.');
+            };
+
+            recognition.onend = () => {
+                if (!recognitionEnabled) return;
+
+                window.setTimeout(() => {
+                    try {
+                        recognition.start();
+                    } catch (error) {
+                        setVoiceStatus('Voice control paused. Tap the avatar to retry.');
+                    }
+                }, 250);
+            };
+        }
+
+        async function enableVoiceControl(source = 'auto') {
+            const granted = await requestMicrophoneAccess(source);
+            if (!granted) return;
+
+            if (!recognition) {
+                setupSpeechRecognition();
+            }
+
+            startVoiceRecognition();
+        }
+
+        function startVoiceRecognition() {
+            if (!recognition) return;
+
+            try {
+                recognitionEnabled = true;
+                recognition.start();
+            } catch (error) {
+                if (error.name !== 'InvalidStateError') {
+                    setVoiceStatus('Unable to start voice control yet.');
+                }
+            }
+        }
+
+        stateButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const state = btn.dataset.state;
+
+                if (state === 'speaking') {
+                    const text = DEMO_TEXTS[Math.floor(Math.random() * DEMO_TEXTS.length)];
+                    speak(text, () => {
+                        setState('idle');
+                        setVoiceStatus('Awaiting wake phrase: “Hola Kuida”.');
+                    });
+                    return;
+                }
+
+                if (isSpeaking) {
+                    speechSynthesis.cancel();
+                    isSpeaking = false;
+                }
+
+                setState(state);
+                wakeModeActive = state === 'idle';
+
+                if (state === 'idle') {
+                    setVoiceStatus('Awaiting wake phrase: “Hola Kuida”.');
+                } else if (state === 'mute') {
+                    setVoiceStatus('Muted. Tap to listen again.');
+                } else {
+                    setVoiceStatus('State changed to ' + state + '.');
+                }
+            });
+        });
+
+        themeButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                setTheme(btn.dataset.theme);
+            });
+        });
+
+        if (enableMicBtn) {
+            enableMicBtn.addEventListener('click', () => {
+                enableVoiceControl('manual');
+            });
+        }
+
+        stage.addEventListener('pointerdown', () => {
+            startVoiceRecognition();
+            onPressStart();
+        });
+        stage.addEventListener('pointerup', onPressEnd);
+        stage.addEventListener('pointerleave', onPressEnd);
+        stage.addEventListener('pointercancel', onPressEnd);
+        stage.addEventListener('click', handleStageClick);
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                clearPressTimer();
+                stage.classList.remove('is-pressing');
+            }
+        });
+
+        setTheme('dark');
+        setState('idle');
+        enterWakeMode();
+        setupSpeechRecognition();
+        enableVoiceControl('auto');
+    </script>
+</body>
+
+</html>
